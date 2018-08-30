@@ -1,0 +1,48 @@
+package com.a3DPong.server.browserComunicator;
+
+import com.a3DPong.server.util.ServerInfo;
+import com.zeroc.Ice.Communicator;
+
+import a3DPongServerBrowser.GameServerPrx;
+import a3DPongServerBrowser.Server;
+
+public class ServerBrowserCommunicator implements Runnable{
+
+	private Thread thread;
+	private boolean running;
+	private Communicator communicator;
+	
+	@Override
+	public void run() 
+	{
+		//Connect to ServerBrowser and send details.
+		communicator = com.zeroc.Ice.Util.initialize();
+        GameServerPrx clientPrx = GameServerPrx.checkedCast(
+                communicator.stringToProxy("client:default -h 58.167.142.74 -p 10000")).ice_twoway().ice_secure(false).ice_collocationOptimized(false).ice_compress(true);
+
+        if(clientPrx == null)
+        {
+            //If connection is failed due to server problems
+            System.err.println("Network: " + "Invalid proxy");
+            return;
+        }
+        System.out.println("Network: " + "Connected");
+        Server server = new Server();
+        server.address = ServerInfo.ADDRESS;
+        server.UUID = ServerInfo.UUID;
+        server.port = ServerInfo.PORT;
+        server.name = ServerInfo.NAME;
+        server.players = 
+		clientPrx.sendServerDetails(server);
+	}
+	
+	public synchronized void start()
+	{
+		if(!running)
+		{
+			thread = new Thread(this);
+			thread.start();
+		}
+	}
+
+}

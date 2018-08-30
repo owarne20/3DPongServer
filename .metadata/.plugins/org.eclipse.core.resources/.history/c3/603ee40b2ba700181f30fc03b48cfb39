@@ -1,0 +1,16 @@
+package com.a3DPong.server.util;
+
+import java.util.Random;
+
+public class ServerInfo 
+{	
+	public static final String UUID = java.util.UUID.randomUUID().toString();
+	
+	static Random r = new Random();
+	static int number = r.nextInt(10000);
+	public static final String NAME = "Server " + number;
+	
+	public static final String ADDRESS = "58.167.142.74";
+	public static final String PORT = "10000";
+
+}

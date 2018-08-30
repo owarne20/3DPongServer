@@ -1,0 +1,26 @@
+module a3DPong
+{
+
+	struct Server
+	{
+		string name;
+	    string address:
+		string port;
+		string UUID;
+		short players;
+	}
+	
+	struct ServerList
+	{
+		Server[] servers;
+	}
+	
+    interface ServerBrowserServer
+    {
+		void sendServerList(ServerList sl);
+    }
+    interface ServerBrowserClient
+    {
+        void sendServerCallback(Server* server);
+    }
+}

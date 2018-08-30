@@ -1,0 +1,25 @@
+package com.a3DPong.serverBrowser;
+
+import a3DPong.Server;
+import a3DPong.ServerList;
+
+public class Main {
+
+	private static ServerList serverList;
+	
+	public static void main(String[] args) 
+	{
+		ServerBrowserToClient serverBrowserToClient = new ServerBrowserToClient();
+		serverBrowserToClient.start();
+		serverList = new ServerList();
+		serverList.servers = new Server[100];
+	}
+	
+	public static ServerList getServers(){
+		return serverList;	
+	}
+	public static void addServer(Server server)
+	{
+		serverList
+	}
+}

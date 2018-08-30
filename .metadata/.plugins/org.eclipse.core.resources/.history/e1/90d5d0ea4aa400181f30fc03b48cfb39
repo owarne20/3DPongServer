@@ -1,0 +1,16 @@
+package com.a3DPong.serverBrowser.networkInterfaces;
+
+import com.zeroc.Ice.Current;
+
+import a3DPong.ServerBrowserClient;
+import a3DPong.ServerBrowserServerPrx;
+
+public class ServerBrowserClientI implements ServerBrowserClient{
+
+	@Override
+	public void sendServerCallback(ServerBrowserServerPrx server, Current current) {
+		// TODO Auto-generated method stub
+		
+	}
+
+}

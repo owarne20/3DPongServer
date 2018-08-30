@@ -1,0 +1,5 @@
+package com.a3DPong.serverBrowser;
+
+public class ServerBrowserToClient {
+
+}

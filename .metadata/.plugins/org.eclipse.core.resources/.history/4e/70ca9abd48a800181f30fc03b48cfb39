@@ -1,0 +1,65 @@
+package com.a3DPong.serverBrowser;
+
+import java.util.ArrayList;
+
+import a3DPongServerBrowser.Server;
+import a3DPongServerBrowser.ServerList;
+
+public class Main {
+
+	private static ArrayList<Server> serverList = new ArrayList<>();
+	
+	public static void main(String[] args) 
+	{
+		ServerBrowserToClient serverBrowserToClient = new ServerBrowserToClient();
+		serverBrowserToClient.start();
+		ServerBrowserToServer serverBrowserToServer = new ServerBrowserToServer();
+		serverBrowserToServer.start();
+	}
+	
+	public static ServerList getServers(){
+		Server[] servers = new Server[100];
+		serverList.toArray(servers);
+		ServerList sl = new ServerList();
+		sl.servers = servers;
+		return sl;
+	}
+	public static void addServer(Server server)
+	{
+		//TODO: remove old server details from list, need to be found via UUID.
+		
+		if(server.players == (short) -1)
+		{
+			//Remove server
+			Server toRemove = null;
+			for(Server s : serverList)
+			{
+				if(s.UUID == server.UUID)
+				{
+					toRemove = s;
+				}
+			}
+			if(toRemove != null)
+			{
+				serverList.remove(toRemove);
+			}
+			return;
+		}
+		Server toRemove = null;
+		for(Server s : serverList)
+		{
+			System.out.println(s.UUID + " " + server.UUID);
+			
+			if(s.UUID == server.UUID)
+			{
+				toRemove = s;
+				System.out.println("asdasfsa");
+			}
+		}
+		if(toRemove != null)
+		{
+			serverList.remove(toRemove);
+		}
+		serverList.add(server);
+	}
+}

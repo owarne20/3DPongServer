@@ -1,0 +1,19 @@
+package com.a3DPong.serverBrowser;
+
+public class ServerBrowserToServer implements Runnable{
+
+	@Override
+	public void run() {
+		// TODO Auto-generated method stub
+		
+	}
+	
+	public synchronized void start(){
+		
+	}
+	
+	public synchronized void stop(){
+		
+	}
+
+}

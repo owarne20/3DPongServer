@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Rename method &apos;com.a3DPong.server.browserComunicator.ServerBrowserCommunicator.start()&apos; to &apos;push&apos;&#x0D;&#x0A;- Original project: &apos;3DPongServerICE&apos;&#x0D;&#x0A;- Original element: &apos;com.a3DPong.server.browserComunicator.ServerBrowserCommunicator.start()&apos;&#x0D;&#x0A;- Renamed element: &apos;com.a3DPong.server.browserComunicator.ServerBrowserCommunicator.push()&apos;&#x0D;&#x0A;- Update references to refactored element" delegate="false" deprecate="false" description="Rename method &apos;start&apos;" flags="589830" id="org.eclipse.jdt.ui.rename.method" input="/src&lt;com.a3DPong.server.browserComunicator{ServerBrowserCommunicator.java[ServerBrowserCommunicator~start" name="push" references="true" stamp="1534805593803" version="1.0"/>
+</session>

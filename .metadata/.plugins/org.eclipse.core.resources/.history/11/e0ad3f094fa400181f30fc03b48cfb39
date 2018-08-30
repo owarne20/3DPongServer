@@ -1,0 +1,28 @@
+package com.a3DPong.serverBrowser;
+
+import java.util.ArrayList;
+
+import a3DPong.Server;
+import a3DPong.ServerList;
+
+public class Main {
+
+	private static ArrayList<Server> serverList = new ArrayList<>();
+	
+	public static void main(String[] args) 
+	{
+		ServerBrowserToClient serverBrowserToClient = new ServerBrowserToClient();
+		serverBrowserToClient.start();
+	}
+	
+	public static ServerList getServers(){
+		Server[] server = new Server[100];
+		serverList.toArray(server);
+		ServerList sl = new ServerList();
+		return sl;	
+	}
+	public static void addServer(Server server)
+	{
+		serverList
+	}
+}

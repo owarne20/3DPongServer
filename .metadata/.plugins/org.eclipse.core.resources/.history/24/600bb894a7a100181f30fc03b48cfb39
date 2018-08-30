@@ -1,0 +1,195 @@
+package com.a3DPong.server;
+
+import org.omg.CORBA.StringSeqHolder;
+
+import com.a3DPong.server.IceInterface.ClientI;
+import com.a3DPong.server.gameLoop.MainLoop;
+import com.zeroc.Ice.Communicator;
+import com.zeroc.Ice.InitializationData;
+import com.zeroc.Ice.ObjectAdapter;
+import com.zeroc.Ice.Properties;
+import com.zeroc.Ice.Util;
+
+import a3DPong.ServerPrx;
+
+
+public class ServerMain {
+
+	private static ServerPrx clientOne, clientTwo;
+	private static String clientOneId, clientTwoId;
+	
+	private static int clientsConnected = 0;
+	
+	private static MainLoop ml;
+	
+	public static void main(String[] args) {
+		
+		Properties properties = Util.createProperties(args);
+		properties.setProperty("Ice.ACM.Close", "4");
+		properties.setProperty("Ice.ACM.Heartbeat", "0");
+		properties.setProperty("Ice.ACM.Timeout", "30");
+		InitializationData id = new InitializationData();
+		id.properties = properties;
+		
+		
+		//True will be replaced by a console command to shut the server down
+		//TODO: Combine the sendBallPosition and sendPaddlePosition together to make networking more efficient.
+		String address = "10.0.0.61";
+		String port = "10000";
+		while(true)
+		{
+			try(Communicator communicator = Util.initialize(args))
+			{
+				ObjectAdapter adapter = 
+						communicator.createObjectAdapterWithEndpoints("ClientCommunicationAdapter", "default -h " + address + " -p " + port + " ");
+				adapter.add(new ClientI(), com.zeroc.Ice.Util.stringToIdentity("client"));
+				adapter.activate();
+				System.out.println("Server started on " + address + ":" + port + "\nWaiting for clients...");
+	            while(clientsConnected < 2)
+	            {
+	            	try 
+	            	{
+						Thread.sleep(100);
+					} catch (InterruptedException e) 
+	            	{
+						e.printStackTrace();
+					}
+	            }
+	            System.out.println("Both clients connected");
+	            ml = new MainLoop(5, 4, 4, 1.0f, 1.1f);
+	            ml.start();
+	            communicator.waitForShutdown();
+			}
+			finally
+			{
+				ml.stop();
+				ml = null;
+			}
+		}
+
+	}
+	public static void addClientProxy(ServerPrx client, String connection)
+	{
+		//Register client proxies so that they can be accessed
+		if(clientsConnected == 0){
+			clientOne = client;
+			clientOneId = connection;
+			clientsConnected++;
+		}
+		else if(clientsConnected == 1)
+		{
+			clientTwo = client;
+			clientTwoId = connection;
+			clientsConnected++;
+		}
+		else if(clientsConnected >= 2)
+		{
+			//If there are more than 2 players then disconnect any joining players
+			client.disconnectAsync("Too many clients in server");
+			System.err.println("Extra client attempted to join");
+		}
+	}
+	
+	public static void clientDisconnected(String connection)
+	{
+		
+		//Check to see if 2 players are connected
+		if(clientsConnected <= 1){
+			clientsConnected = 0;
+			return;
+		}
+		
+		//End GameLoop
+		if(ml != null){
+			ml.stop();
+		}
+		
+		//Disconnect any still connected players
+		if(clientOneId == connection)
+		{
+			clientTwo.disconnectAsync("Other player left match");
+		}
+		else
+		{
+			clientOne.disconnectAsync("Other player left match");
+		}
+		clientsConnected = 0;
+	}
+	
+	public static void sendBallPositionAndVector(float x, float y, float vX, float vY)
+	{
+		if(clientOne == null || clientTwo == null){
+			return;
+		}
+		
+		clientOne.sendBallPositionAndVectorAsync(x, y, vX, vY);
+		clientTwo.sendBallPositionAndVectorAsync(x, y, vX, vY);
+	}
+	
+	public static void sendScore(int score, byte side)
+	{
+		clientOne.sendScoreAsync(score, side);
+		clientTwo.sendScoreAsync(score, side);
+	}
+	
+	public static void sendPaddlePositionX(float p1X, float p2X)
+	{
+		if(clientOne == null || clientTwo == null){
+			return;
+		}
+		clientOne.sendPaddlePositionXAsync(p2X);
+		clientTwo.sendPaddlePositionXAsync(p1X);
+	}
+	
+	public static void ready()
+	{
+		if(clientOne == null || clientTwo == null){
+			return;
+		}
+		clientOne.readyAsync((byte) 0);
+        clientTwo.readyAsync((byte) 1);
+	}
+	public static void sendDirectionHint(float vX, float vY, int seconds, int padding)
+	{
+		if(clientOne == null || clientTwo == null){
+			return;
+		}
+		clientOne.startDirectionHintAsync(vX, vY, seconds, padding);
+		clientTwo.startDirectionHintAsync(vX, vY, seconds, padding);
+	}
+	public static void sendStart(float vX, float vY)
+	{
+		if(clientOne == null || clientTwo == null){
+			return;
+		}
+		clientOne.startGameAsync(vX, vY);
+		clientTwo.startGameAsync(vX, vY);
+	}
+	
+	public static void setPaddlePositionX(float x, String connection)
+	{
+		if(connection == clientOneId)
+		{
+			if(ml != null)
+			{
+				ml.setPaddlePositionX(x, (byte) 0);
+			}
+		}
+		else if(connection == clientTwoId)
+		{
+			if(ml != null)
+			{
+				ml.setPaddlePositionX(x,(byte) 1);
+			}
+		}
+	}
+	public static void sendTimer(float timeInSeconds)
+	{
+		if(clientOne == null || clientTwo == null){
+			return;
+		}
+		clientOne.sendTimeAsync(timeInSeconds);
+		clientTwo.sendTimeAsync(timeInSeconds);
+	}
+
+}

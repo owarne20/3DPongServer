@@ -1,0 +1,25 @@
+package com.a3DPong.server.browserComunicator;
+
+public class ServerBrowserCommunicator implements Runnable{
+
+	private Thread thread;
+	private boolean running;
+	
+	@Override
+	public void run() 
+	{
+		//Connect to ServerBrowser and send details.
+		//TODO: move ServerBrowser generated ICE files to a different package to merge.
+		
+	}
+	
+	public synchronized void start()
+	{
+		if(!running)
+		{
+			thread = new Thread(this);
+			thread.start();
+		}
+	}
+
+}

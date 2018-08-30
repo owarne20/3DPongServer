@@ -1,0 +1,5 @@
+package com.a3DPong.server.util;
+
+public class ServerInfo {
+
+}

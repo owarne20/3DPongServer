@@ -1,0 +1,300 @@
+package com.a3DPong.server.gameLoop;
+
+import com.a3DPong.server.ServerMain;
+import com.a3DPong.server.util.Lang;
+import com.a3DPong.server.util.Rect;
+import com.a3DPong.server.util.Vector;
+
+public class MainLoop implements Runnable{
+	
+	private boolean gameRunning;
+	
+	private int fps;
+	
+	private long lastFpsTime, timeAtStart;
+	
+	private Thread thread;
+	
+	private Vector direction;
+	
+	private boolean flagReady, flagHint, flagStart;
+	
+	private Vector cubePosition, lastPosition, paddleOnePosition, paddleTwoPosition;
+	
+	private int sideOneScore, sideTwoScore;
+	
+	private float leftBound = -0.7f, rightBound = 0.7f, nearBound  = -1.0f, farBound = 1.0f, cubeWidth = 0.06f,
+			paddleWidth = 0.2f, paddleHeight = 0.06f;
+	
+	private float startSpeed, speedModifier;
+	
+	private long startTime, hintTime, hintPadding;
+	
+	public MainLoop(int startTime, int hintTime, int hintPadding, float startSpeed, float speedModifier)
+	{
+		this.startTime = (long) (startTime * 1000000000L);
+		this.hintTime = (long) (hintTime * 1000000000L);
+		this.hintPadding = (long) (hintPadding * 1000000000L);
+		this.fps = 0;
+		this.lastFpsTime = System.nanoTime();
+		this.startSpeed = startSpeed;
+		this.speedModifier = speedModifier;
+		this.sideOneScore = 0;
+		this.sideTwoScore = 0;
+	}
+	
+	@Override
+	public void run() 
+	{
+		initialiseGame();
+		gameLoop();
+		finalise();
+	}
+	
+	private void gameLoop()
+	{
+		long lastLoopTime = System.nanoTime();
+		long timeAtLastFrame = 0;
+		int targetFrameRate = 40;
+		long timePerFrame = 1000000000L / targetFrameRate;
+		while (gameRunning)
+		{
+			timePerFrame = 1000000000L / targetFrameRate;
+			if((System.nanoTime() - timeAtLastFrame) > timePerFrame){
+				timeAtLastFrame = System.nanoTime();
+				long now = System.nanoTime();
+				long updateLength = now - lastLoopTime;
+				lastLoopTime = now;
+				double delta = updateLength / 1000000000F;
+		
+				//Update the frame counter
+				lastFpsTime += updateLength;
+				fps++;
+		
+				//Update our FPS counter if a second has passed since we last recorded
+				if (lastFpsTime >= 1000000000)
+				{
+					System.out.println("FPS: " + fps + " Target: " + targetFrameRate);
+					lastFpsTime = 0;
+					fps = 0;
+				}
+		
+				//Update the game
+				if(System.nanoTime() > timeAtStart + startTime + hintTime + hintPadding)
+				{
+					if(!flagStart)
+					{
+						flagStart = true;
+						ServerMain.sendStart(direction.x, direction.y);
+						System.out.println("sendStart");
+						startTime = 0;
+					}
+					targetFrameRate = 40;
+					update(delta);
+				} 
+				else	
+				{
+					if(System.nanoTime() > timeAtStart + startTime)
+					{
+						if(!flagHint)
+						{
+							flagHint = true;
+							ServerMain.sendDirectionHint(direction.x, direction.y, (int) (hintTime / 1000000000L), (int) (hintPadding / 1000000000L));
+							//ServerMain.sendBallPositionAndVector(0, 0, 0, 0);
+							System.out.println("sendDirectionHint");
+						}
+						targetFrameRate = 5;
+					}
+					else
+					{
+						if(!flagReady)
+						{
+							flagReady = true;
+							ServerMain.ready();
+							System.out.println("ready");
+						}
+						targetFrameRate = 10;
+						updateTimer(delta);
+					}
+					
+				}
+				
+				try 
+				{	
+					Thread.sleep(1);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
+			
+		}
+	}
+	
+	private void updateTimer(double delta)
+	{
+		long difference = (timeAtStart + startTime) - System.nanoTime();
+		float timeInSeconds = difference / 1000000000F;
+		ServerMain.sendTimer(timeInSeconds);
+	}
+	
+	private void update(double delta)
+	{		
+		cubePosition = cubePosition.translate(direction.scale((float) delta));
+		if(direction.length() < 3.8f)
+		{
+			direction = direction.scale((float) (1 + delta / 40));
+		}
+		
+        //Collision with paddle
+
+        Rect paddle1 = new Rect(paddleOnePosition.x, paddleOnePosition.y, paddleWidth, paddleHeight);
+        Rect paddle2 = new Rect(paddleTwoPosition.x, paddleTwoPosition.y, paddleWidth, paddleHeight);
+        Rect cube = new Rect(this.cubePosition.x, this.cubePosition.y, cubeWidth, cubeWidth);
+        Rect lastCube = new Rect(this.lastPosition.x, this.lastPosition.y, cubeWidth, cubeWidth);
+
+        if(cube.intersects(paddle1))
+        {
+            Lang.Side s = cube.sideIntersected(paddle1, lastCube);
+
+            if(s == Lang.Side.left) {
+                direction = new Vector(-direction.x, direction.y);
+                cubePosition.x = Math.min(cubePosition.x, paddle1.left + cubeWidth);
+            }
+            if(s == Lang.Side.right) {
+                direction = new Vector(-direction.x, direction.y);
+                cubePosition.x = Math.max(cubePosition.x, paddle1.right - cubeWidth);
+            }
+
+            if(s == Lang.Side.bottom){
+                direction = new Vector(direction.x, -direction.y);
+                cubePosition.y = Math.min(cubePosition.y, paddle1.bottom + cubeWidth);
+            }
+            if(s == Lang.Side.top){
+                direction = new Vector(direction.x, -direction.y);
+                cubePosition.y = Math.max(cubePosition.y, paddle1.top - cubeWidth);
+            }
+        }
+
+        if(cube.intersects(paddle2))
+        {
+            Lang.Side s = cube.sideIntersected(paddle2, lastCube);
+
+            if(s == Lang.Side.left){
+                direction = new Vector(-direction.x, direction.y);
+                cubePosition.x = Math.min(cubePosition.x, paddle2.left + cubeWidth);
+            }
+            if(s == Lang.Side.right){
+                direction = new Vector(-direction.x, direction.y);
+                cubePosition.x = Math.max(cubePosition.x, paddle2.right - cubeWidth);
+            }
+
+            if(s == Lang.Side.bottom){
+                direction = new Vector(direction.x, -direction.y);
+                cubePosition.y = Math.min(cubePosition.y, paddle2.bottom + cubeWidth);
+            }
+            if(s == Lang.Side.top){
+                direction = new Vector(direction.x, -direction.y);
+                cubePosition.y = Math.max(cubePosition.y, paddle2.top - cubeWidth);
+            }
+        }
+
+        lastPosition = cubePosition;
+
+        //Collision with sides
+        if(cubePosition.x < leftBound + cubeWidth || cubePosition.x > rightBound - cubeWidth){
+            direction = new Vector(-direction.x, direction.y);
+            if(cubePosition.x < leftBound + cubeWidth) {
+                float correctionX = (leftBound + cubeWidth) - cubePosition.x;
+                cubePosition.translate(new Vector(correctionX * 2, 0));
+            }
+            if(cubePosition.x > rightBound - cubeWidth) {
+                float correctionX = cubePosition.x - (rightBound - cubeWidth);
+                cubePosition.translate(new Vector(correctionX * 2, 0));
+            }
+        }
+        if(cubePosition.y < nearBound + cubeWidth || cubePosition.y > farBound - cubeWidth){
+            direction = new Vector(direction.x, -direction.y);
+            if(cubePosition.y < nearBound + cubeWidth) {
+                float correctionY = (nearBound + cubeWidth) - cubePosition.y;
+                cubePosition.translate(new Vector(0, correctionY * 2));
+                scorePoint((byte) 1);
+            }
+            if(cubePosition.y > farBound - cubeWidth) {
+                float correctionY = cubePosition.y - (farBound - cubeWidth);
+                cubePosition.translate(new Vector(0, correctionY * 2));
+                scorePoint((byte) 0);
+            }
+        }
+
+        cubePosition = new Vector(limit(cubePosition.x, leftBound + cubeWidth, rightBound - cubeWidth), limit(cubePosition.y, nearBound + cubeWidth, farBound - cubeWidth));
+        ServerMain.sendBallPositionAndVector(cubePosition.x, cubePosition.y, direction.x, direction.y);
+        ServerMain.sendPaddlePositionX(paddleOnePosition.x, paddleTwoPosition.x);
+	}
+	
+	public synchronized void start()
+	{
+		if(!gameRunning && thread == null){
+			thread = new Thread(this);
+			thread.start();
+			gameRunning = true;
+		}
+		
+	}
+	public synchronized void stop()
+	{
+		System.out.println("Stopping");
+		if(gameRunning && thread != null){
+			gameRunning = false;
+			try {
+				thread.join(1);
+			} catch (InterruptedException e) {
+				System.err.println("Failed to end thread!!!!");
+				e.printStackTrace();
+			}
+		}
+	}
+	private void initialiseGame()
+	{
+		direction = Vector.random2DNormalisedVector(startSpeed);
+		cubePosition = new Vector(0.0f, 0.0f);
+		lastPosition = new Vector(0.0f, 0.0f);
+		paddleOnePosition = new Vector(0.0f, -0.8f);
+		paddleTwoPosition = new Vector(0.0f,  0.8f);
+		timeAtStart = System.nanoTime();
+		flagReady = flagHint = flagStart = false;
+	}
+	private void finalise()
+	{
+		
+	}
+    private float limit(float value, float min, float max) {
+        return Math.max(min, Math.min(max, value));
+    }
+    
+    public void setPaddlePositionX(float x, byte p)
+    {
+    	if(p == (byte) 0)
+    	{
+    		paddleOnePosition.x = x;
+    	}
+    	if(p == (byte) 1)
+    	{
+    		paddleTwoPosition.x = x;
+    	}
+    }
+    
+    public void scorePoint(byte side)
+    {
+    	initialiseGame();
+    	if(side == (byte) 0)
+    	{
+    		sideOneScore++;
+    	}
+    	else{
+    		sideTwoScore++;
+    	}
+    	ServerMain.sendScore(sideOneScore, (byte) 0);
+    	ServerMain.sendScore(sideTwoScore, (byte) 1);
+    }
+	
+}

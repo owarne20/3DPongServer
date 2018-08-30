@@ -1,0 +1,18 @@
+package com.a3DPong.serverBrowser.networkInterfaces;
+
+import com.zeroc.Ice.Current;
+
+import a3DPong.GameServer;
+import a3DPong.Server;
+
+public class GameServerI implements GameServer{
+
+	//TODO: add servers to ServerBrowserToServer
+	
+	@Override
+	public void sendServerDetails(Server server, Current current) {
+		
+		
+	}
+
+}
